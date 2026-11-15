@@ -244,6 +244,8 @@ enum SelfCheck {
         precondition(item.opensAsFolder && item.size == nil, "folder item")
         precondition(!FileItem(url: URL(fileURLWithPath: "/System/Applications/Calculator.app")).opensAsFolder, "apps open, not browse")
         FileRank.selfCheck()
+        check("a file you don't own goes through Finder's Trash", FileOps.isPermission(NSError(domain: NSCocoaErrorDomain, code: NSFileWriteNoPermissionError))
+              && FileOps.isPermission(NSError(domain: NSPOSIXErrorDomain, code: Int(EPERM))) && !FileOps.isPermission(NSError(domain: NSCocoaErrorDomain, code: NSFileNoSuchFileError)))
         Tidy.selfCheck()
         MDParser.selfCheck()
         Vitals.selfCheck()

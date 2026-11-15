@@ -149,6 +149,11 @@ final class FileOps {
                 try fm.trashItem(at: u, resultingItemURL: &res)
                 if let r = res as URL? { done.append((u, r)) }
             } catch {
+                // Owned by another user (root leftovers in /Applications): Finder asks for an admin password and trashes it.
+                if Self.isPermission(error) {
+                    if ask, let r = Self.finderTrash(u) { done.append((u, r)) }
+                    continue
+                }
                 // Some volumes (network, some USB) have no Trash: deleting there is permanent, so ask.
                 guard ask else { continue }
                 let a = NSAlert()
@@ -290,6 +295,27 @@ final class FileOps {
             if !fm.fileExists(atPath: c.path) { return c }
             n += 1
         }
+    }
+
+    nonisolated static func isPermission(_ error: Error) -> Bool {
+        let e = error as NSError
+        if e.domain == NSCocoaErrorDomain, e.code == NSFileWriteNoPermissionError || e.code == NSFileReadNoPermissionError { return true }
+        if e.domain == NSPOSIXErrorDomain, e.code == Int(EACCES) || e.code == Int(EPERM) { return true }
+        return false
+    }
+
+    /// Moves `url` to the Trash through Finder, which asks for an administrator's password when needed. Returns where it went.
+    static func finderTrash(_ url: URL) -> URL? {
+        let path = url.path.replacingOccurrences(of: "\\", with: "\\\\").replacingOccurrences(of: "\"", with: "\\\"")
+        var err: NSDictionary?
+        let out = NSAppleScript(source: "tell application \"Finder\" to POSIX path of (delete (POSIX file \"\(path)\" as alias) as alias)")?
+            .executeAndReturnError(&err).stringValue
+        if let out { return URL(fileURLWithPath: out) }
+        // -128: the user cancelled the password prompt.
+        if (err?[NSAppleScript.errorNumber] as? Int) != -128 {
+            alert("Couldn't Move to Trash", "“\(url.lastPathComponent)” belongs to another user, and Finder couldn't move it. Allow Burrow to control Finder in System Settings › Privacy & Security › Automation, then try again.")
+        }
+        return nil
     }
 
     static func alert(_ title: String, _ text: String) {

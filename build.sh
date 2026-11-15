@@ -37,7 +37,7 @@ if [ "$RELEASE" = 1 ]; then
   [ -n "$IDENTITY" ] || { echo "No Developer ID Application identity in the keychain" >&2; exit 1; }
   echo "==> Signing for release with $IDENTITY"
   "$KIT/tools/embed-sparkle.sh" "$APP" "$IDENTITY" --release
-  codesign --force --options runtime --timestamp --sign "$IDENTITY" "$APP"
+  codesign --force --options runtime --timestamp --entitlements Burrow.entitlements --sign "$IDENTITY" "$APP"
   codesign --verify --deep --strict --verbose=2 "$APP"
   echo "Built $APP (release)"; exit 0
 fi
