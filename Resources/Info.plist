@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>CFBundleName</key><string>Burrow</string>
+	<key>CFBundleDisplayName</key><string>Burrow</string>
+	<key>CFBundleIdentifier</key><string>com.example.burrow</string>
+	<key>CFBundleExecutable</key><string>Burrow</string>
+	<key>CFBundleIconFile</key><string>Burrow</string>
+	<key>CFBundlePackageType</key><string>APPL</string>
+	<key>CFBundleShortVersionString</key><string>1.0</string>
+	<key>CFBundleVersion</key><string>1</string>
+	<key>LSMinimumSystemVersion</key><string>15.0</string>
+	<key>LSApplicationCategoryType</key><string>public.app-category.utilities</string>
+	<key>NSHighResolutionCapable</key><true/>
+	<key>NSAccentColorName</key><string>AccentColor</string>
+	<key>CFBundleDocumentTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleTypeName</key><string>Folder</string>
+			<key>CFBundleTypeRole</key><string>Viewer</string>
+			<key>LSHandlerRank</key><string>Default</string>
+			<key>LSItemContentTypes</key>
+			<array><string>public.folder</string><string>public.volume</string></array>
+		</dict>
+	</array>
+	<key>NSAppleEventsUsageDescription</key><string>Burrow reads the current browser tab's address when you add a bookmark.</string>
+	<key>NSDesktopFolderUsageDescription</key><string>Burrow shows the files on your Desktop.</string>
+	<key>NSDocumentsFolderUsageDescription</key><string>Burrow shows the files in Documents.</string>
+	<key>NSDownloadsFolderUsageDescription</key><string>Burrow shows the files in Downloads.</string>
+	<key>NSRemovableVolumesUsageDescription</key><string>Burrow shows the files on external drives.</string>
+	<key>NSNetworkVolumesUsageDescription</key><string>Burrow shows the files on network drives.</string>
+</dict>
+</plist>
