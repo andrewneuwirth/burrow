@@ -100,7 +100,8 @@ struct SettingsView: View {
 
     private var starts: [(String, String)] {
         let h = FileManager.default.homeDirectoryForCurrentUser.path
-        return [("Home", h), ("Desktop", h + "/Desktop"), ("Documents", h + "/Documents"), ("Downloads", h + "/Downloads"), ("Developer", h + "/Developer")]
+        let dev = s.developerTools || s.startPath == h + "/Developer"
+        return [("Home", h), ("Desktop", h + "/Desktop"), ("Documents", h + "/Documents"), ("Downloads", h + "/Downloads")] + (dev ? [("Developer", h + "/Developer")] : [])
     }
 
     var body: some View {
@@ -120,6 +121,12 @@ struct SettingsView: View {
                 Picker("New windows show", selection: $s.viewMode) {
                     ForEach(ViewMode.allCases) { Text($0.title).tag($0) }
                 }
+            }
+            Section {
+                Toggle("Developer tools", isOn: $s.developerTools)
+            } footer: {
+                Text("Adds the Installed and AI Agents pages, Xcode leftovers in Free Up Space, and ~/Developer shortcuts.")
+                    .foregroundStyle(.secondary)
             }
             Section("Drop Shelf") {
                 Toggle("Show the shelf while dragging files", isOn: $s.shelfOnDrag)
@@ -221,7 +228,17 @@ enum SelfCheck {
         MDParser.selfCheck()
         Vitals.selfCheck()
         Migration.selfCheck()
-        precondition(!Onboarding.isExistingUser(UserDefaults(suiteName: "burrow-selfcheck-empty-\(UUID().uuidString)")!), "a new user sees the walkthrough")
+        let fresh = UserDefaults(suiteName: "burrow-selfcheck-empty-\(UUID().uuidString)")!
+        precondition(!Onboarding.isExistingUser(fresh), "a new user sees the walkthrough")
+        AppSettings.settleDeveloperTools(fresh)
+        precondition(fresh.object(forKey: "developerTools") as? Bool == false, "new user: developer tools off")
+        fresh.set(true, forKey: "onboarded")
+        AppSettings.settleDeveloperTools(fresh)
+        precondition(fresh.bool(forKey: "developerTools") == false, "developer tools: decided once, finishing the tour doesn't flip it")
+        let old = UserDefaults(suiteName: "burrow-selfcheck-old-\(UUID().uuidString)")!
+        old.set(["/tmp"], forKey: "recents")
+        AppSettings.settleDeveloperTools(old)
+        precondition(old.bool(forKey: "developerTools"), "existing user: developer tools on")
         print("Burrow self-check passed")
     }
 }

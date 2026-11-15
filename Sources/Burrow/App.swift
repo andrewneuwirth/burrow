@@ -5,7 +5,7 @@ import SwiftUI
 struct BurrowApp: App {
     @NSApplicationDelegateAdaptor(AppDelegate.self) var delegate
 
-    init() { Migration.run() }   // before anything reads settings
+    init() { Migration.run(); AppSettings.settleDeveloperTools() }   // before anything reads settings
 
     var body: some Scene {
         Settings { SettingsView() }
@@ -261,7 +261,7 @@ struct BurrowCommands: Commands {
             Button("Documents") { Act.go("~/Documents") }.keyboardShortcut("o", modifiers: [.command, .shift])
             Button("Downloads") { Act.go("~/Downloads") }.keyboardShortcut("l", modifiers: [.command, .option])
             Button("Applications") { Act.go("/Applications") }.keyboardShortcut("a", modifiers: [.command, .shift])
-            Button("Developer") { Act.go("~/Developer") }
+            if AppSettings.shared.developerTools { Button("Developer") { Act.go("~/Developer") } }
             Divider()
             Button("Go to Folder…") { Act.pane?.editingPath = true }.keyboardShortcut("l")
             Button("Go to Folder… ") { Act.pane?.editingPath = true }.keyboardShortcut("g", modifiers: [.command, .shift])

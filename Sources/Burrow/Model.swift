@@ -512,6 +512,13 @@ final class AppSettings {
     var openMarkdownHere: Bool { didSet { d.set(openMarkdownHere, forKey: "openMarkdownHere") } }
     var iconSize: IconSize { didSet { d.set(iconSize.rawValue, forKey: "iconSize") } }
     var folderTint: Int { didSet { d.set(folderTint, forKey: "folderTint") } }
+    /// The pages and shortcuts only software developers need: Installed, AI Agents, Xcode leftovers, ~/Developer.
+    var developerTools: Bool {
+        didSet {
+            d.set(developerTools, forKey: "developerTools")
+            if !developerTools { Windows.shared.panes.filter { $0.page.map(Page.developerOnly.contains) == true }.forEach { $0.closePage() } }
+        }
+    }
     private(set) var recents: [String]
 
     func noteRecent(_ u: URL) {
@@ -525,15 +532,23 @@ final class AppSettings {
         set { d.set(newValue?.path, forKey: "lastFolder") }
     }
 
+    /// New users start without the developer tools; anyone who used Burrow before (the walkthrough's test) keeps them.
+    /// Decided once, on the first launch of this version, before the walkthrough or a window can make a new user look existing.
+    nonisolated static func settleDeveloperTools(_ d: UserDefaults = .standard) {
+        if d.object(forKey: "developerTools") == nil { d.set(Onboarding.isExistingUser(d), forKey: "developerTools") }
+    }
+
     private init() {
         let home = FileManager.default.homeDirectoryForCurrentUser
+        let dev = UserDefaults.standard.bool(forKey: "developerTools")
+        developerTools = dev
         showHidden = d.bool(forKey: "showHidden")
         foldersFirst = d.object(forKey: "foldersFirst") as? Bool ?? true
         viewMode = ViewMode(rawValue: d.string(forKey: "viewMode") ?? "") ?? .list
         startPath = d.string(forKey: "startPath") ?? home.path
         let icloud = home.appendingPathComponent("Library/Mobile Documents/com~apple~CloudDocs")
         let defaults = [URL(fileURLWithPath: "/Applications"), home.appendingPathComponent("Desktop"),
-                        home.appendingPathComponent("Documents"), home.appendingPathComponent("Downloads"), home, home.appendingPathComponent("Developer")]
+                        home.appendingPathComponent("Documents"), home.appendingPathComponent("Downloads"), home] + (dev ? [home.appendingPathComponent("Developer")] : [])
             + (FileManager.default.fileExists(atPath: icloud.path) ? [icloud] : [])
         shelfOnDrag = d.object(forKey: "shelfOnDrag") as? Bool ?? true
         openMarkdownHere = d.object(forKey: "openMarkdownHere") as? Bool ?? true
@@ -659,7 +674,8 @@ enum Page: Hashable {
         switch self { case .workspace, .tag: true; default: false }
     }
 
-    static let tools: [Page] = [.bookmarks, .clean, .installed, .agents, .about]
+    static let developerOnly: [Page] = [.installed, .agents]
+    @MainActor static var tools: [Page] { [.bookmarks, .clean] + (AppSettings.shared.developerTools ? developerOnly : []) + [.about] }
 }
 
 /// A project's files and folders from anywhere (Mac, iCloud Drive, Dropbox, external drives) on one page.

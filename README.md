@@ -16,9 +16,11 @@ From [newi tools](https://newitools.app/burrow/).
   Nothing is copied or moved; a workspace only remembers paths.
 - **Smart Downloads and Tidy**: group by kind or date, sort into kind folders, and flag installers you already installed,
   duplicates and files untouched for 90 days. Flagged files only ever go to the Trash.
-- **Free Up Space**: Xcode build files, caches, old downloads and more, each explained, everything to the Trash.
-- **Bookmarks**, an **AI Agents** page (projects set up for Claude Code, Codex and Cursor), **Installed** (Homebrew, npm,
-  pip and other packages) and an **About This Mac** page.
+- **Free Up Space**: caches, old downloads, Mail attachments and more, each explained, everything to the Trash.
+- **Bookmarks** and an **About This Mac** page.
+- **Developer tools** (Settings › Developer tools, off for new installs): an **AI Agents** page (projects set up for
+  Claude Code, Codex and Cursor), **Installed** (Homebrew, npm, pip and other packages), Xcode build files and archives
+  in Free Up Space, and `~/Developer` in the sidebar and Go menu.
 - **Undo for everything**: rename, move, copy, new folder and Trash are all ⌘Z-able.
 - **Optional default file browser**: folders and every app's "Show in Finder" open in Burrow. One click gives it back to
   Finder. Finder still draws the desktop.

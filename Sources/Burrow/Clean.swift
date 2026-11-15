@@ -71,6 +71,11 @@ struct CleanSpot: Identifiable, Sendable {
                   roots: [h("Library/Developer/Xcode/Archives")], safe: false),
     ]
 
+    /// The rows this user sees: Xcode's leftovers only with Settings › Developer tools on.
+    @MainActor static var shown: [CleanSpot] {
+        AppSettings.shared.developerTools ? fixed : fixed.filter { !["derived", "devsupport", "archives"].contains($0.id) }
+    }
+
     /// Lists the items and adds up their size. Slow on big caches: call off the main thread.
     static func measure(_ s: CleanSpot, now: Date = Date()) -> CleanSpot {
         var s = s
@@ -137,9 +142,9 @@ struct CleanSpot: Identifiable, Sendable {
 
 /// "Free Up Space": how full the startup disk is, and caches and leftovers that can go to the Trash (⌘Z brings them back).
 struct SmartCleanPage: View {
-    @State private var spots = CleanSpot.fixed
+    @State private var spots = CleanSpot.shown
     @State private var big: [CleanSpot]?   // nil while Spotlight looks
-    @State private var checked = Set(CleanSpot.fixed.filter(\.safe).map(\.id))
+    @State private var checked = Set(CleanSpot.shown.filter(\.safe).map(\.id))
     @State private var disk: (used: Int64, total: Int64, free: Int64)?
     @State private var trash: CleanSpot?
     @State private var generation = 0
@@ -251,12 +256,12 @@ struct SmartCleanPage: View {
         if let total = v?.volumeTotalCapacity, let free = v?.volumeAvailableCapacityForImportantUsage {
             disk = (Int64(total) - free, Int64(total), free)
         }
-        spots = CleanSpot.fixed
+        spots = CleanSpot.shown
         big = nil
         folders = await Task.detached { Vitals.biggestFolders() }.value
         trash = nil
         await withTaskGroup(of: Void.self) { g in
-            for s in CleanSpot.fixed {
+            for s in CleanSpot.shown {
                 g.addTask { @MainActor in
                     let m = await Task.detached { CleanSpot.measure(s) }.value
                     if let i = spots.firstIndex(where: { $0.id == m.id }) { spots[i] = m }
