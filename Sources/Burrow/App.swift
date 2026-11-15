@@ -1,5 +1,6 @@
 import AppKit
 import SwiftUI
+import MacToolsUpdates
 
 @main
 struct BurrowApp: App {
@@ -52,6 +53,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         MainActor.assumeIsolated {
             Keys.install()
             Shelf.shared.install()
+            AppUpdater.start()
             DispatchQueue.main.async {   // after any open-file events from the launch
                 let quiet = atLogin && AppSettings.shared.quietLogin
                 if Windows.shared.controllers.isEmpty && !quiet { Windows.shared.open(AppSettings.shared.startFolder) }
@@ -198,6 +200,7 @@ enum Act {
 
 struct BurrowCommands: Commands {
     var body: some Commands {
+        CommandGroup(after: .appInfo) { CheckForUpdatesButton() }
         CommandGroup(after: .appSettings) {
             Button("Give It Back to Finder…") { Task { await DefaultBrowser.giveBack() } }
         }

@@ -27,6 +27,9 @@ xcrun actool Resources/Assets.xcassets --compile "$APP/Contents/Resources" --pla
 
 IDENTITY=${SIGN_IDENTITY:-}
 [ -n "$IDENTITY" ] || IDENTITY=$(security find-identity -v -p codesigning 2>/dev/null | grep "Apple Development" | head -1 | sed -E 's/.*"(.*)"/\1/')
+# Sparkle (updates): embedded and its helpers signed inside-out before the app, see Kit's docs/updates.md.
+KIT=../Kit; [ -d "$KIT" ] || KIT=.build/checkouts/mac-tools-kit
+"$KIT/tools/embed-sparkle.sh" "$APP" "${IDENTITY:--}"
 codesign --force --sign "${IDENTITY:--}" "$APP"
 
 if [[ "${1:-}" == "--install" ]]; then

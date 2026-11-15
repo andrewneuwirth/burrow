@@ -2,6 +2,7 @@ import AppKit
 import CoreServices
 import ServiceManagement
 import SwiftUI
+import MacToolsUpdates
 import UniformTypeIdentifiers
 
 // MARK: Get Info (⌘I)
@@ -150,6 +151,7 @@ struct SettingsView: View {
                         .font(.callout).foregroundStyle(.secondary)
                 }
             }
+            AppUpdateSettings()
             Section {
                 Button("Show Welcome Tour…") { Onboarding.show() }
             }
