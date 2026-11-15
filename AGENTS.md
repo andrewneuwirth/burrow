@@ -3,7 +3,7 @@
 A native macOS file browser meant to stand in for Finder (Finder still draws the desktop and can't be removed).
 Swift 6.2 tools in Swift 5 language mode, SwiftPM, macOS 15+, SwiftUI inside AppKit windows. No dependencies.
 Bundle id `app.newitools.Burrow` (set by `build.sh`; `config.local.env`, gitignored, can override `BUNDLE_ID`,
-`SIGN_IDENTITY` and `PREVIOUS_BUNDLE_ID`, see `config.example.env`). Older builds used `com.example.burrow`:
+`SIGN_IDENTITY` and `PREVIOUS_BUNDLE_ID`, see `config.example.env`). Builds under an older id:
 `Migration.swift` copies that UserDefaults domain once when `PREVIOUS_BUNDLE_ID` is set (never overwriting a key).
 Bookmarks live in `~/Library/Application Support/Burrow/` (named by app, not bundle id), so they carry over on their own.
 
