@@ -710,7 +710,8 @@ struct ItemMenu: View {
             if case let .workspace(id) = pane.page {
                 Button("Remove from Workspace") { Workspaces.shared.remove(items.map(\.url), from: id) }
             }
-            Button("Show in Finder") { Process.launchedProcess(launchPath: "/usr/bin/open", arguments: ["-R"] + items.map(\.url.path)) }
+            // Finder by bundle id: a plain `open -R` asks the NSFileViewer, which is Burrow itself once it's the default.
+            Button("Show in Finder") { Process.launchedProcess(launchPath: "/usr/bin/open", arguments: ["-b", "com.apple.finder", "-R"] + items.map(\.url.path)) }
         }
     }
 }
