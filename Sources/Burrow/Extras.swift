@@ -229,6 +229,7 @@ enum SelfCheck {
         MDParser.selfCheck()
         Vitals.selfCheck()
         Migration.selfCheck()
+        Shelf.selfCheck(in: dir)
         let fresh = UserDefaults(suiteName: "burrow-selfcheck-empty-\(UUID().uuidString)")!
         precondition(!Onboarding.isExistingUser(fresh), "a new user sees the walkthrough")
         AppSettings.settleDeveloperTools(fresh)

@@ -42,7 +42,8 @@ receive your data. Your files, folders and settings stay on your Mac. Burrow onl
 
 - macOS user defaults (view options, favorites, shelf folders, workspaces, recent folders, search picks):
   `defaults delete app.newitools.Burrow` (or your own bundle id) removes them.
-- `~/Library/Application Support/Burrow/bookmarks.json` (your bookmarks).
+- `~/Library/Application Support/Burrow/bookmarks.json` (your bookmarks) and `holding.plist` (references to the files
+  in the shelf's Holding, so they're still there after a restart; the files themselves stay where they are).
 
 ## Changes and contact
 

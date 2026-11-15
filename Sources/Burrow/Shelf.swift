@@ -8,7 +8,7 @@ import SwiftUI
 @MainActor @Observable
 final class Shelf {
     static let shared = Shelf()
-    var holding: [URL] = []
+    var holding: [URL] = Shelf.loadHolding() { didSet { Shelf.saveHolding(holding) } }
     @ObservationIgnored private var panel: NSPanel?
     @ObservationIgnored private var auto = false          // shown by a drag, so it hides again when the drag ends
     @ObservationIgnored var used = false                  // something was dropped on it during this drag
@@ -18,6 +18,41 @@ final class Shelf {
     var isShown: Bool { panel?.isVisible == true }
 
     func toggle() { isShown ? hide() : show() }
+
+    /// Holding survives quits as bookmarks (they follow a file that's moved or renamed), next to bookmarks.json.
+    nonisolated static let holdingFile = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
+        .appendingPathComponent("Burrow/holding.plist")
+
+    nonisolated static func saveHolding(_ urls: [URL], to file: URL = holdingFile) {
+        let marks = urls.compactMap { try? $0.bookmarkData() }
+        try? FileManager.default.createDirectory(at: file.deletingLastPathComponent(), withIntermediateDirectories: true)
+        try? PropertyListSerialization.data(fromPropertyList: marks, format: .binary, options: 0).write(to: file, options: .atomic)
+    }
+
+    /// Files that are gone or in the Trash drop out; never mounts a server or asks anything.
+    nonisolated static func loadHolding(from file: URL = holdingFile) -> [URL] {
+        guard let data = try? Data(contentsOf: file),
+              let marks = try? PropertyListSerialization.propertyList(from: data, format: nil) as? [Data] else { return [] }
+        return marks.compactMap { mark in
+            var stale = false
+            guard let u = try? URL(resolvingBookmarkData: mark, options: [.withoutUI, .withoutMounting], bookmarkDataIsStale: &stale),
+                  FileManager.default.fileExists(atPath: u.path), !u.path.contains("/.Trash/") else { return nil }
+            return u
+        }
+    }
+
+    nonisolated static func selfCheck(in dir: URL) {
+        let file = dir.appendingPathComponent("holding.plist"), a = dir.appendingPathComponent("held.txt"), b = dir.appendingPathComponent("gone.txt")
+        try! "x".write(to: a, atomically: true, encoding: .utf8)
+        try! "y".write(to: b, atomically: true, encoding: .utf8)
+        saveHolding([a, b], to: file)
+        try! FileManager.default.removeItem(at: b)
+        let moved = dir.appendingPathComponent("held moved.txt")
+        try! FileManager.default.moveItem(at: a, to: moved)
+        let back = loadHolding(from: file)
+        precondition(back.map(\.lastPathComponent) == ["held moved.txt"], "holding: kept across quits, follows a move, drops a deleted file")
+        precondition(loadHolding(from: dir.appendingPathComponent("none.plist")).isEmpty, "holding: no file, empty")
+    }
 
     func show(auto: Bool = false) {
         self.auto = auto
