@@ -1,7 +1,7 @@
 # AGENTS.md: Burrow
 
 A native macOS file browser meant to stand in for Finder (Finder still draws the desktop and can't be removed).
-Swift 6.2 tools in Swift 5 language mode, SwiftPM, macOS 15+, SwiftUI inside AppKit windows. No dependencies.
+Swift 6.2 tools in Swift 5 language mode, SwiftPM, macOS 15+, SwiftUI inside AppKit windows. One dependency: Kit's MacToolsUpdates (Sparkle updates).
 Bundle id `app.newitools.Burrow` (set by `build.sh`; `config.local.env`, gitignored, can override `BUNDLE_ID`,
 `SIGN_IDENTITY` and `PREVIOUS_BUNDLE_ID`, see `config.example.env`). Builds under an older id:
 `Migration.swift` copies that UserDefaults domain once when `PREVIOUS_BUNDLE_ID` is set (never overwriting a key).
@@ -14,6 +14,7 @@ swift build && .build/debug/Burrow --self-check   # file ops + undo in a temp fo
 .build/debug/Burrow --welcome-preview DIR          # the walkthrough and Settings as PNGs (light + dark), offscreen
 ./build.sh                                        # build/Burrow.app (Apple Development signature, so folder grants stick)
 ./build.sh --install                              # /Applications, lsregister, relaunch: only when the owner asks
+./build.sh --release                              # Developer ID + hardened runtime + timestamp; ignores config.local.env
 ```
 
 ## Code map

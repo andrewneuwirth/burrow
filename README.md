@@ -1,36 +1,58 @@
+<div align="center">
+
+<img src="docs/icon.png" width="128" height="128" alt="Burrow app icon">
+
 # Burrow
 
-A file browser for people who live in Finder. Columns, list, icons and gallery with tabs and a split view, a Drop Shelf
-for moving files between apps, workspaces that gather a project's files from anywhere, and a tidier Downloads folder.
-It can stand in for Finder as your default file browser. SwiftUI and AppKit, macOS 15 or later, no server.
+A Finder replacement for macOS: columns, list, icons and gallery with tabs and a split view,<br>
+a Drop Shelf for moving files between apps, workspaces, and a tidier Downloads folder.
 
-From [newi tools](https://newitools.app/burrow/).
+[![macOS 15+](https://img.shields.io/badge/macOS-15%2B-black?logo=apple)](https://newitools.app/burrow/)
+[![Latest release](https://img.shields.io/github/v/release/andrewneuwirth/burrow)](https://github.com/andrewneuwirth/burrow/releases/latest)
+[![CI](https://github.com/andrewneuwirth/burrow/actions/workflows/ci.yml/badge.svg)](https://github.com/andrewneuwirth/burrow/actions/workflows/ci.yml)
+[![Swift 6.2](https://img.shields.io/badge/Swift-6.2-F05138?logo=swift&logoColor=white)](Package.swift)
+[![License: MIT](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
+
+[**Download**](https://github.com/andrewneuwirth/burrow/releases/latest) · [Website](https://newitools.app/burrow/) · [Privacy](PRIVACY.md)
+
+<br>
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/views-dark.jpg">
+  <img src="docs/views-light.jpg" width="760" alt="Burrow showing Documents as icons and file cards, with Favorites, Workspaces and Free Up Space in the sidebar">
+</picture>
+
+</div>
 
 ## Features
 
-- **Four views**: icons, list, columns (⌘3) and gallery, with tabs, a split view (⌘D, F5 copies and F6 moves to the other
-  side), Quick Look on Space and ⌘K to jump to any folder.
-- **Drop Shelf** (⌃⌥Space from any app, or by itself while you drag files): drop on a pinned folder to move a file there
-  (⌥ copies), or keep files in Holding and drag them out later.
-- **Workspaces**: a project's files and folders from anywhere (your Mac, iCloud Drive, external drives) on one page.
-  Nothing is copied or moved; a workspace only remembers paths.
-- **Smart Downloads and Tidy**: group by kind or date, sort into kind folders, and flag installers you already installed,
-  duplicates and files untouched for 90 days. Flagged files only ever go to the Trash.
-- **Free Up Space**: caches, old downloads, Mail attachments and more, each explained, everything to the Trash.
-- **Bookmarks** and an **About This Mac** page.
-- **Developer tools** (Settings › Developer tools, off for new installs): an **AI Agents** page (projects set up for
-  Claude Code, Codex and Cursor), **Installed** (Homebrew, npm, pip and other packages), Xcode build files and archives
-  in Free Up Space, and `~/Developer` in the sidebar and Go menu.
-- **Undo for everything**: rename, move, copy, new folder and Trash are all ⌘Z-able.
-- **Optional default file browser**: folders and every app's "Show in Finder" open in Burrow. One click gives it back to
-  Finder. Finder still draws the desktop.
-- A short **first-launch walkthrough**: the shelf, the default-browser switch, permissions, Open at Login.
+| Four views | Drop Shelf | Workspaces |
+| --- | --- | --- |
+| Icons, list, columns (⌘3) and gallery, with tabs, a split view (⌘D; F5 copies and F6 moves to the other side), Quick Look on Space and ⌘K to jump to any folder. | ⌃⌥Space from any app, or by itself while you drag files. Drop on a pinned folder to move a file there (⌥ copies), or keep files in Holding for later. | A project's files and folders from anywhere (your Mac, iCloud Drive, external drives) on one page. Nothing is copied or moved. |
+| **Smart Downloads and Tidy** | **Free Up Space** | **Undo for everything** |
+| Group by kind or date, sort into kind folders, and flag installers you already installed, duplicates and files untouched for 90 days. Flagged files only go to the Trash. | Caches, old downloads, Mail attachments and more, each explained, everything to the Trash. | Rename, move, copy, new folder and Trash all undo with ⌘Z. |
+| **Default file browser** | **Developer tools** | **No server** |
+| Optional: folders and every app's "Show in Finder" open in Burrow. One click gives it back to Finder. | Off for new installs: an AI Agents page, Installed packages, Xcode build files in Free Up Space, `~/Developer` in the sidebar. | SwiftUI and AppKit, running entirely on your Mac. Bookmarks and About This Mac pages too. |
 
 ## Screenshots
 
-_Coming soon._
+<table>
+<tr>
+<td width="50%"><picture><source media="(prefers-color-scheme: dark)" srcset="docs/shelf-dark.jpg"><img src="docs/shelf-light.jpg" alt="Burrow's Drop Shelf with pinned folders and Holding"></picture><br><sub>The Drop Shelf</sub></td>
+<td width="50%"><picture><source media="(prefers-color-scheme: dark)" srcset="docs/workspace-dark.jpg"><img src="docs/workspace-light.jpg" alt="A workspace page listing files from a work drive, iCloud Drive and Documents"></picture><br><sub>A workspace gathers files from anywhere</sub></td>
+</tr>
+<tr>
+<td width="50%"><picture><source media="(prefers-color-scheme: dark)" srcset="docs/tidy-dark.jpg"><img src="docs/tidy-light.jpg" alt="The Tidy sheet for Downloads: files sorted into kind folders, an installer flagged"></picture><br><sub>Tidy for Downloads</sub></td>
+<td width="50%"><picture><source media="(prefers-color-scheme: dark)" srcset="docs/default-dark.jpg"><img src="docs/default-light.jpg" alt="Burrow's Settings with the Drop Shelf options and Make Burrow the Default"></picture><br><sub>Make Burrow the default, in Settings</sub></td>
+</tr>
+</table>
 
-## Build from source
+## Install
+
+Download `Burrow-0.1.0.dmg` from [Releases](https://github.com/andrewneuwirth/burrow/releases/latest), open it and drag
+Burrow to Applications. It's signed with Developer ID and notarized by Apple, updates itself, and needs macOS 15 or later.
+
+### Build from source
 
 Needs Xcode 26 or later (Swift 6.2 tools); the app runs on macOS 15 or later.
 
@@ -41,9 +63,10 @@ swift build && .build/debug/Burrow --self-check   # should print "Burrow self-ch
 open build/Burrow.app
 ```
 
-`build.sh` signs with your Apple Development identity if you have one (a stable signature keeps the Desktop, Documents
-and Downloads grants across rebuilds), otherwise ad hoc. To use your own bundle id or signing identity, copy
-`config.example.env` to `config.local.env` and edit it.
+Burrow uses MacToolsUpdates from [mac-tools-kit](https://github.com/andrewneuwirth/mac-tools-kit); SwiftPM fetches it, or
+uses a checkout at `../Kit` if you have one. `build.sh` signs with your Apple Development identity if you have one (a
+stable signature keeps the Desktop, Documents and Downloads grants across rebuilds), otherwise ad hoc. To use your own
+bundle id or signing identity, copy `config.example.env` to `config.local.env` and edit it.
 
 ## Making it the default, and going back
 
@@ -91,4 +114,4 @@ See [CONTRIBUTING.md](CONTRIBUTING.md). Security issues: [SECURITY.md](SECURITY.
 
 ## License
 
-[MIT](LICENSE)
+[MIT](LICENSE). Burrow is part of [newi tools](https://newitools.app/burrow/).
