@@ -10,8 +10,8 @@ Bookmarks live in `~/Library/Application Support/Burrow/` (named by app, not bun
 ## Commands
 
 ```sh
-swift build && .build/debug/Burrow --self-check   # file ops + undo in a temp folder, search ranking, migration
-.build/debug/Burrow --welcome-preview DIR          # the first-launch walkthrough as PNGs (light + dark), offscreen
+swift build && .build/debug/Burrow --self-check   # file ops + undo in a temp folder, search ranking, migration, defaults, Holding
+.build/debug/Burrow --welcome-preview DIR          # the walkthrough and Settings as PNGs (light + dark), offscreen
 ./build.sh                                        # build/Burrow.app (Apple Development signature, so folder grants stick)
 ./build.sh --install                              # /Applications, lsregister, relaunch: only when the owner asks
 ```

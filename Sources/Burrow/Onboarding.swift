@@ -298,6 +298,20 @@ enum WelcomePreview {
                 try? rep.representation(using: .png, properties: [:])?.write(to: URL(fileURLWithPath: folder).appendingPathComponent(name))
             }
         }
-        print("wrote \(Walkthrough.steps * 2) pictures to \(folder)")
+        for appearance in [NSAppearance.Name.aqua, .darkAqua] {   // and Settings, at its natural height
+            let host = NSHostingView(rootView: SettingsView())
+            let window = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 460, height: 900), styleMask: [.titled], backing: .buffered, defer: false)
+            window.appearance = NSAppearance(named: appearance)
+            window.contentView = host
+            RunLoop.main.run(until: Date().addingTimeInterval(0.3))
+            host.setFrameSize(NSSize(width: 460, height: max(host.fittingSize.height, 300)))
+            host.layoutSubtreeIfNeeded()
+            RunLoop.main.run(until: Date().addingTimeInterval(0.2))
+            guard let rep = host.bitmapImageRepForCachingDisplay(in: host.bounds) else { continue }
+            host.cacheDisplay(in: host.bounds, to: rep)
+            let name = "settings" + (appearance == .darkAqua ? "-dark" : "") + ".png"
+            try? rep.representation(using: .png, properties: [:])?.write(to: URL(fileURLWithPath: folder).appendingPathComponent(name))
+        }
+        print("wrote \(Walkthrough.steps * 2 + 2) pictures to \(folder)")
     }
 }

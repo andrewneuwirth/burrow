@@ -124,8 +124,7 @@ struct SettingsView: View {
             }
             Section {
                 Toggle("Developer tools", isOn: $s.developerTools)
-            } footer: {
-                Text("Adds the Installed and AI Agents pages, Xcode leftovers in Free Up Space, and ~/Developer shortcuts.")
+                Text("The Installed and AI Agents pages, Xcode leftovers in Free Up Space, and ~/Developer shortcuts.")
                     .foregroundStyle(.secondary)
             }
             Section("Drop Shelf") {
