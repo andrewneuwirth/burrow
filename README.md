@@ -49,7 +49,8 @@ and Downloads grants across rebuilds), otherwise ad hoc. To use your own bundle 
 
 Settings › Make Burrow the Default (or the walkthrough) sets the `NSFileViewer` default, so every app's "Show in Finder"
 opens in Burrow, asks Launch Services to open folders with it, and turns on Open at Login so the shelf's shortcut is
-always there. **Give It Back to Finder** in the same place undoes all three. From Terminal:
+always there. **Give It Back to Finder** in the same place (or Burrow › Give It Back to Finder…) undoes all
+three. Settings › Start without a window keeps login launches quiet: just the shelf and its shortcut. From Terminal:
 
 ```sh
 /Applications/Burrow.app/Contents/MacOS/Burrow --make-default
@@ -58,6 +59,20 @@ always there. **Give It Back to Finder** in the same place undoes all three. Fro
 ```
 
 macOS may still hand some plain folder opens to Finder; "Show in Finder" requests always come to Burrow.
+
+## Uninstalling
+
+1. If Burrow is your default file browser, choose **Burrow › Give It Back to Finder…** (also in Settings), or run
+   `/Applications/Burrow.app/Contents/MacOS/Burrow --give-back`. Skipping this leaves "Show in Finder" pointing at a
+   missing app; `defaults delete -g NSFileViewer` fixes it afterwards.
+2. If you turned on Open at Login yourself, turn it off in System Settings › General › Login Items (Give It Back does
+   this for you). Then quit Burrow and move it to the Trash.
+3. Optional, to remove its settings and files:
+
+```sh
+defaults delete app.newitools.Burrow
+rm -rf ~/Library/Application\ Support/Burrow   # bookmarks and the shelf's Holding list
+```
 
 ## Permissions
 

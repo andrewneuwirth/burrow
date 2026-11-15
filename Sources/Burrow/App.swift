@@ -198,6 +198,9 @@ enum Act {
 
 struct BurrowCommands: Commands {
     var body: some Commands {
+        CommandGroup(after: .appSettings) {
+            Button("Give It Back to Finder…") { Task { await DefaultBrowser.giveBack() } }
+        }
         CommandGroup(replacing: .newItem) {
             Button("New Window") { Windows.shared.open(Act.pane?.url ?? AppSettings.shared.startFolder) }.keyboardShortcut("n")
             Button("New Tab") { Windows.shared.newTab() }.keyboardShortcut("t")

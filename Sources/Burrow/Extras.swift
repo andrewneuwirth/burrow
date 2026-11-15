@@ -146,6 +146,10 @@ struct SettingsView: View {
                     }
                 }
                 .disabled(working)
+                if isDefault {
+                    Text("Removing Burrow? Give it back to Finder first, so folders and “Show in Finder” don't point at a missing app.")
+                        .font(.callout).foregroundStyle(.secondary)
+                }
             }
             Section {
                 Button("Show Welcome Tour…") { Onboarding.show() }
@@ -160,6 +164,20 @@ struct SettingsView: View {
 enum DefaultBrowser {
     static var id: String { Bundle.main.bundleIdentifier ?? "app.newitools.Burrow" }
     static var isDefault: Bool { UserDefaults.standard.persistentDomain(forName: UserDefaults.globalDomain)?["NSFileViewer"] as? String == id }
+
+    /// Burrow › Give It Back to Finder…: the way out before uninstalling, said back in plain words.
+    @MainActor static func giveBack() async {
+        let alert = NSAlert()
+        if isDefault {
+            let notes = await set(false)
+            alert.messageText = notes.isEmpty ? "Finder is your file browser again" : "Finder is back, with a note"
+            alert.informativeText = (notes.isEmpty ? "" : notes.joined(separator: "\n") + "\n\n") + "To remove Burrow, quit it and move it to the Trash."
+        } else {
+            alert.messageText = "Finder is already your file browser"
+            alert.informativeText = "Nothing to undo. To remove Burrow, quit it and move it to the Trash."
+        }
+        alert.runModal()
+    }
 
     /// Folders, "Show in Finder" from every app, and opening at login (so the shelf's hot key is always there).
     @discardableResult static func set(_ on: Bool) async -> [String] {
