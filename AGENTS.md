@@ -33,7 +33,7 @@ swift build && .build/debug/Burrow --self-check   # file ops + undo in a temp fo
 - Pages (`Page` in Model.swift): workspaces and tags list files through the pane's `searchResults` (so every view and file action works on them); tool pages (`ToolPage`) draw their own: `Clean.swift` (Free Up Space), `AboutMac.swift`, `Installed.swift`, `Agents.swift`, `Bookmarks.swift`. `Markdown.swift` opens .md files in their own window.
 - Developer tools (`AppSettings.developerTools`, Settings toggle): gates `Page.developerOnly` (Installed, AI Agents), the Xcode rows in Free Up Space (`CleanSpot.shown`) and `~/Developer` shortcuts. `settleDeveloperTools` decides the default once at launch: on for existing users (`Onboarding.isExistingUser`), off for new ones.
 - Workspaces (`Workspaces` in Model.swift) only remember paths, in UserDefaults `workspaces`; nothing is copied or moved.
-- `Vitals.swift`: memory and disks for About This Mac from `vitals status --json`, and the biggest folders for Free Up Space from Vitals' saved scan (`~/Library/Application Support/Vitals/disk-usage.tsv`). Nil without Vitals; the pages fall back to their own readers.
+- `Readout.swift`: memory and disks for About This Mac from `readout status --json`, and the biggest folders for Free Up Space from Readout's saved scan (`~/Library/Application Support/Readout/disk-usage.tsv`). Nil without Readout; the pages fall back to their own readers.
 - `Look.swift`: the look: glass folders (`FolderGlyph`, tinted by Finder tag or workspace), file cards with previews, folder tiles and cards, kind tabs, the workspace header, S/M/L sizes.
 - `SearchRank.swift`, `FileQuery.swift`: copied from Pier (Spotlight query + ranking). Keep them in step with Pier, or move them into Kit.
 

@@ -29,7 +29,7 @@ enum IconSize: String, CaseIterable, Identifiable {
     func step(_ by: Int) -> IconSize { Self.allCases[min(max(index + by, 0), Self.allCases.count - 1)] }
 }
 
-/// What a folder's front shows: how many items, a symbol for what's mostly inside, and its size when Vitals knows it.
+/// What a folder's front shows: how many items, a symbol for what's mostly inside, and its size when Readout knows it.
 struct FolderInfo {
     let count: Int
     let symbol: String?
@@ -57,7 +57,7 @@ struct FolderInfo {
         let files = kinds.values.reduce(0, +)
         let top = kinds.filter { $0.key != .other }.max { $0.value < $1.value }
         let symbol = code ? Bucket.code.symbol : top.flatMap { $0.value >= 3 && $0.value * 2 > files ? $0.key.symbol : nil }
-        return FolderInfo(count: names.count, symbol: symbol, size: Vitals.sizes[path])
+        return FolderInfo(count: names.count, symbol: symbol, size: Readout.sizes[path])
     }
 
     var summary: String {
@@ -315,7 +315,7 @@ struct WorkspaceHeader: View {
     var body: some View {
         let files = pane.baseItems
         let folders = files.filter(\.opensAsFolder).count
-        let size = files.reduce(Int64(0)) { $0 + ($1.size ?? Vitals.sizes[$1.target.path] ?? 0) }
+        let size = files.reduce(Int64(0)) { $0 + ($1.size ?? Readout.sizes[$1.target.path] ?? 0) }
         let changed = files.compactMap(\.modified).max()
         VStack(alignment: .leading, spacing: 0) {
             ZStack(alignment: .bottomLeading) {

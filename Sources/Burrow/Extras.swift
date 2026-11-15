@@ -248,7 +248,7 @@ enum SelfCheck {
               && FileOps.isPermission(NSError(domain: NSPOSIXErrorDomain, code: Int(EPERM))) && !FileOps.isPermission(NSError(domain: NSCocoaErrorDomain, code: NSFileNoSuchFileError)))
         Tidy.selfCheck()
         MDParser.selfCheck()
-        Vitals.selfCheck()
+        Readout.selfCheck()
         Migration.selfCheck()
         Shelf.selfCheck(in: dir)
         let fresh = UserDefaults(suiteName: "burrow-selfcheck-empty-\(UUID().uuidString)")!

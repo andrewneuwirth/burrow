@@ -82,7 +82,7 @@ struct AboutMacPage: View {
     @State private var marketing: String?
     @State private var checks: [MacFacts.Check]?
     @State private var generation = 0
-    @State private var vitals: Vitals.Status?
+    @State private var readout: Readout.Status?
 
     var body: some View {
         // Cheap reads happen on each render; the shell tools load in .task.
@@ -108,7 +108,7 @@ struct AboutMacPage: View {
                     }
                 }
                 Section {
-                    if let m = vitals?.memory {
+                    if let m = readout?.memory {
                         bar(used: m.used, total: m.total)
                         LabeledContent("Pressure", value: "\(m.pressure.capitalized), \(Int(m.pressure_percent))%")
                         LabeledContent("Apps", value: fmt(m.app))
@@ -121,10 +121,10 @@ struct AboutMacPage: View {
                 } header: {
                     Text("Memory")
                 } footer: {
-                    if vitals != nil { Text("From Vitals, so both apps agree.").font(.caption).foregroundStyle(.secondary) }
+                    if readout != nil { Text("From Readout, so both apps agree.").font(.caption).foregroundStyle(.secondary) }
                 }
                 Section("Storage") {
-                    if let disks = vitals?.disks, !disks.isEmpty {
+                    if let disks = readout?.disks, !disks.isEmpty {
                         ForEach(disks) { d in
                             VStack(alignment: .leading, spacing: 4) {
                                 Label(d.name.isEmpty ? d.mount : d.name, systemImage: d.mount == "/" ? "internaldrive" : "externaldrive")
@@ -168,12 +168,12 @@ struct AboutMacPage: View {
             checks = nil
             async let m = Task.detached { MacFacts.marketingName() }.value
             async let c = Task.detached { MacFacts.security() }.value
-            async let v = Task.detached { Vitals.status() }.value
-            (marketing, checks, vitals) = await (m, c, v)
+            async let v = Task.detached { Readout.status() }.value
+            (marketing, checks, readout) = await (m, c, v)
         }
     }
 
-    /// Burrow's own readers, when Vitals isn't installed.
+    /// Burrow's own readers, when Readout isn't installed.
     @ViewBuilder private var ownMemory: some View {
         let total = Int64(ProcessInfo.processInfo.physicalMemory)
         if let used = MacFacts.memoryUsed() {

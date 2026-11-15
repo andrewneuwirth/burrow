@@ -148,7 +148,7 @@ struct SmartCleanPage: View {
     @State private var disk: (used: Int64, total: Int64, free: Int64)?
     @State private var trash: CleanSpot?
     @State private var generation = 0
-    @State private var folders: (folders: [Vitals.Folder], scanned: Date)?
+    @State private var folders: (folders: [Readout.Folder], scanned: Date)?
 
     private var all: [CleanSpot] { spots + (big ?? []) }
     private var picked: [CleanSpot] { all.filter { checked.contains($0.id) && $0.visible && !$0.blocked } }
@@ -176,7 +176,7 @@ struct SmartCleanPage: View {
                     }
                 }
                 if let folders {
-                    // Vitals' saved scan: a map of where the space went, to look at, not a list of things to delete.
+                    // Readout's saved scan: a map of where the space went, to look at, not a list of things to delete.
                     Section {
                         ForEach(folders.folders) { f in
                             HStack {
@@ -190,7 +190,7 @@ struct SmartCleanPage: View {
                     } header: {
                         Text("Biggest folders")
                     } footer: {
-                        Text("From Vitals' disk scan \(folders.scanned.formatted(.relative(presentation: .named))). Rescan in Vitals › Disks.")
+                        Text("From Readout's disk scan \(folders.scanned.formatted(.relative(presentation: .named))). Rescan in Readout › Disks.")
                             .font(.caption).foregroundStyle(.secondary)
                     }
                 }
@@ -258,7 +258,7 @@ struct SmartCleanPage: View {
         }
         spots = CleanSpot.shown
         big = nil
-        folders = await Task.detached { Vitals.biggestFolders() }.value
+        folders = await Task.detached { Readout.biggestFolders() }.value
         trash = nil
         await withTaskGroup(of: Void.self) { g in
             for s in CleanSpot.shown {
