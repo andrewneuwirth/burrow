@@ -21,7 +21,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     func applicationWillFinishLaunching(_ notification: Notification) {
         // Command-line runs (self-check, previews, --make-default) never show a Dock icon.
-        let cli = ["--self-check", "--welcome-preview", "--make-icon", "--make-default", "--give-back"]
+        let cli = ["--self-check", "--drag-check", "--welcome-preview", "--make-icon", "--make-default", "--give-back"]
         if CommandLine.arguments.contains(where: cli.contains) { NSApp.setActivationPolicy(.accessory) }
         // "Reveal in Finder" from other apps, once Burrow is the NSFileViewer: the 'misc'/'mvis' event Finder gets.
         NSAppleEventManager.shared().setEventHandler(self, andSelector: #selector(reveal(_:reply:)),
@@ -30,6 +30,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         if CommandLine.arguments.contains("--self-check") { MainActor.assumeIsolated { SelfCheck.run() }; exit(0) }
+        if CommandLine.arguments.contains("--drag-check") { MainActor.assumeIsolated { DragCheck.run() }; exit(0) }
         if let i = CommandLine.arguments.firstIndex(of: "--welcome-preview"), CommandLine.arguments.count > i + 1 {
             MainActor.assumeIsolated { WelcomePreview.run(into: CommandLine.arguments[i + 1]) }
             exit(0)

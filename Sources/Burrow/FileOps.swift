@@ -63,16 +63,23 @@ final class FileOps {
         return x.isEqual(y)
     }
 
+    /// The folder a drop really lands in: a Finder alias or symlink of a folder is followed to the original.
+    nonisolated static func realFolder(_ url: URL) -> URL {
+        let original = (try? url.resourceValues(forKeys: [.isAliasFileKey]).isAliasFile) == true ? (try? URL(resolvingAliasFileAt: url)) ?? url : url
+        return original.resolvingSymlinksInPath().folder
+    }
+
     func transfer(_ urls: [URL], to dir: URL, copy: Bool) {
-        let dir = dir.folder
+        let dir = Self.realFolder(dir)
         var plan: [(URL, URL)] = []
         var replacing: Set<String> = []
         var always: Conflict?
         for raw in urls {
             let src = raw.standardizedFileURL
-            let inPlace = src.deletingLastPathComponent().path == dir.path
+            let real = src.deletingLastPathComponent().resolvingSymlinksInPath().appendingPathComponent(src.lastPathComponent).path
+            let inPlace = (real as NSString).deletingLastPathComponent == dir.path
             if inPlace && !copy { continue }   // moved onto its own folder: nothing to do
-            if dir.path == src.path || dir.path.hasPrefix(src.path + "/") { NSSound.beep(); continue }   // into itself
+            if dir.path == real || dir.path.hasPrefix(real + "/") { NSSound.beep(); continue }   // into itself
             var dst = dir.appendingPathComponent(src.lastPathComponent)
             if inPlace {
                 dst = Self.unique(dst, copy: true)   // ⌥-drag in the same folder duplicates
@@ -124,6 +131,7 @@ final class FileOps {
     enum Conflict { case keepBoth, replace, skip }
 
     private func askConflict(_ name: String, many: Bool, always: inout Conflict?) -> Conflict {
+        if let sink = Self.alertSink { sink("conflict: \(name)"); return .skip }
         let a = NSAlert()
         a.messageText = "An item named “\(name)” already exists here."
         a.informativeText = "Replacing it moves the existing item to the Trash."
@@ -318,7 +326,11 @@ final class FileOps {
         return nil
     }
 
+    /// Checks set this so nothing pops up: alerts are collected, and a conflict skips.
+    static var alertSink: ((String) -> Void)?
+
     static func alert(_ title: String, _ text: String) {
+        if let sink = alertSink { return sink("\(title): \(text)") }
         let a = NSAlert()
         a.messageText = title
         a.informativeText = text

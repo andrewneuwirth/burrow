@@ -237,6 +237,20 @@ final class PaneModel: Identifiable {
         return true
     }
 
+    var dropTargeted = false   // files dragged over the pane's background: its outline shows
+    var dropRow: URL?          // the folder row or tile files are dragged over
+    var takesDrops: Bool { if case .workspace = page { return true }; return page == nil }
+    /// Files dropped on this pane: a workspace remembers them (nothing moves), a folder moves or copies them in.
+    func take(_ urls: [URL]) {
+        if case let .workspace(id) = page { Workspaces.shared.add(urls, to: id) }
+        else if page == nil { FileOps.shared.drop(urls, into: url) }
+    }
+
+    /// Dropped on an item: a folder takes the files, a file passes them to the pane.
+    func drop(_ urls: [URL], onto item: FileItem) {
+        if item.opensAsFolder { FileOps.shared.drop(urls, into: item.target) } else { take(urls) }
+    }
+
     func open(_ targets: [FileItem]? = nil) {
         let list = targets ?? selectedItems
         if searchResults != nil { list.forEach { SearchMemory.picked($0.url.path, for: searchQuery) } }

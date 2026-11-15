@@ -59,14 +59,17 @@ private struct AncestorColumn: View {
     @State private var items: [FileItem] = []
 
     var body: some View {
-        List(items) { item in
-            ColumnRow(item: item, selected: item.target.folder == chosen && item.opensAsFolder)
-                .contentShape(Rectangle())
-                .onTapGesture {
-                    if item.opensAsFolder { pane.go(item.target) } else { pane.go(folder, select: [item.url]) }
-                }
-                .onDrag { NSItemProvider(object: item.url as NSURL) }
-                .contextMenu { ItemMenu(pane: pane, urls: [item.url]) }
+        List {
+            ForEach(items) { item in
+                ColumnRow(item: item, selected: item.target.folder == chosen && item.opensAsFolder)
+                    .contentShape(Rectangle())
+                    .onTapGesture {
+                        if item.opensAsFolder { pane.go(item.target) } else { pane.go(folder, select: [item.url]) }
+                    }
+                    .onDrag { NSItemProvider(object: item.url as NSURL) }
+                    .itemDrop(item, pane, folder: folder)
+                    .contextMenu { ItemMenu(pane: pane, urls: [item.url]) }
+            }
         }
         .listStyle(.plain)
         .task(id: "\(folder.path)#\(AppSettings.shared.showHidden)") {
@@ -88,6 +91,7 @@ private struct CurrentColumn: View {
             ForEach(pane.visible) { item in
                 ColumnRow(item: item, selected: false).tag(item.url)
                     .onDrag { NSItemProvider(object: item.url as NSURL) }
+                    .itemDrop(item, pane)
             }
         }
         .listStyle(.plain)

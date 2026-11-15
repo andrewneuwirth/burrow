@@ -199,6 +199,12 @@ enum DefaultBrowser {
 
 @MainActor
 enum SelfCheck {
+    /// File moves run in the background; waits up to 3 s for them to land.
+    static func wait(_ done: () -> Bool) {
+        let end = Date().addingTimeInterval(3)
+        while !done(), Date() < end { RunLoop.main.run(until: Date().addingTimeInterval(0.05)) }
+    }
+
     static func run() {
         let fm = FileManager.default
         let dir = fm.temporaryDirectory.appendingPathComponent("burrow-check-\(UUID().uuidString)", isDirectory: true)
@@ -214,6 +220,9 @@ enum SelfCheck {
         precondition(FileOps.unique(sub).lastPathComponent == "my.folder 2", "unique: folders keep dots")
 
         let ops = FileOps.shared
+        var alerts: [String] = []
+        FileOps.alertSink = { alerts.append($0) }
+        defer { FileOps.alertSink = nil }
         let b = ops.rename(a, to: "b.txt")!
         precondition(fm.fileExists(atPath: b.path) && !fm.fileExists(atPath: a.path), "rename")
         ops.undo()
@@ -232,6 +241,39 @@ enum SelfCheck {
         precondition(!fm.fileExists(atPath: made.path), "trash")
         ops.undo()
         precondition(fm.fileExists(atPath: made.path), "undo trash")
+
+        // A drag inside Burrow: the pasteboard items ItemMouse writes, read back the way drop targets read them, then dropped.
+        let pb = NSPasteboard(name: .init("burrow-selfcheck-\(UUID().uuidString)"))
+        pb.clearContents()
+        let b2 = dir.appendingPathComponent("b.txt")
+        try! "b".write(to: b2, atomically: true, encoding: .utf8)
+        pb.writeObjects([a, b2].map { $0 as NSURL })
+        let dragged = FileDropView.files(pb)
+        precondition(dragged.map(\.lastPathComponent) == ["a.txt", "b.txt"], "drag pasteboard: file URLs read back")
+        let into = dir.appendingPathComponent("drop", isDirectory: true)
+        try! fm.createDirectory(at: into, withIntermediateDirectories: false)
+        ops.drop(dragged, into: into)
+        wait { ops.jobs.isEmpty && fm.fileExists(atPath: into.appendingPathComponent("b.txt").path) }
+        precondition(fm.fileExists(atPath: into.appendingPathComponent("a.txt").path) && !fm.fileExists(atPath: b2.path), "drop moves into the folder")
+        ops.undo()
+        wait { fm.fileExists(atPath: a.path) && fm.fileExists(atPath: b2.path) }
+        precondition(fm.fileExists(atPath: a.path) && fm.fileExists(atPath: b2.path), "⌘Z undoes the drop")
+        pb.releaseGlobally()
+        // Onto a symlink and a Finder alias of a folder: the file lands in the original folder.
+        let real = dir.appendingPathComponent("real", isDirectory: true)
+        try! fm.createDirectory(at: real, withIntermediateDirectories: false)
+        let link = dir.appendingPathComponent("link"), alias = dir.appendingPathComponent("alias")
+        try! fm.createSymbolicLink(at: link, withDestinationURL: real)
+        try! URL.writeBookmarkData(try! real.bookmarkData(options: .suitableForBookmarkFile), to: alias)
+        for via in [link, alias] {
+            ops.drop([a], into: via)
+            wait { ops.jobs.isEmpty && fm.fileExists(atPath: real.appendingPathComponent("a.txt").path) }
+            precondition(fm.fileExists(atPath: real.appendingPathComponent("a.txt").path), "drop onto a folder's \(via.lastPathComponent): lands in the folder")
+            ops.undo()
+            wait { fm.fileExists(atPath: a.path) }
+            precondition(fm.fileExists(atPath: a.path), "⌘Z undoes the drop onto a \(via.lastPathComponent)")
+        }
+        precondition(alerts.isEmpty, "no alerts: \(alerts)")
 
         let pane = PaneModel(url: dir, viewMode: .list)
         pane.show(.columns)

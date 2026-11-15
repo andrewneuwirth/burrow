@@ -10,7 +10,8 @@ Bookmarks live in `~/Library/Application Support/Burrow/` (named by app, not bun
 ## Commands
 
 ```sh
-swift build && .build/debug/Burrow --self-check   # file ops + undo in a temp folder, search ranking, migration, defaults, Holding
+swift build && .build/debug/Burrow --self-check   # file ops + undo in a temp folder (drag pasteboard, drops onto symlinks/aliases), search ranking, migration, defaults, Holding
+.build/debug/Burrow --drag-check                  # drops in every view, transparent windows over a temp folder, through AppKit's own drag hit test; no mouse events
 .build/debug/Burrow --welcome-preview DIR          # the walkthrough and Settings as PNGs (light + dark), offscreen
 ./build.sh                                        # build/Burrow.app (Apple Development signature, so folder grants stick)
 ./build.sh --install                              # /Applications, lsregister, relaunch: only when the owner asks
@@ -24,6 +25,10 @@ swift build && .build/debug/Burrow --self-check   # file ops + undo in a temp fo
 - `FileOps.swift`: copy/move with conflict choices and a progress bar, Trash, rename, new folder, duplicate, compress, and ⌘Z undo. Everything destructive goes through the Trash first.
 - `Views.swift`: sidebar, path bar, list / icon / gallery views, context menus, icons and thumbnails.
 - `Extras.swift`: Get Info, Settings (including "Make Burrow the Default" and "Show Welcome Tour…"), the self-check.
+- Drag and drop: file drop targets are AppKit views (`FileDropView` in Views.swift: the icons' `ItemMouse`, and `DropZone`
+  via `paneDrop`/`itemDrop`/`rowDrop`/`folderDrop`), not SwiftUI `.onDrop`. AppKit hands a drag to the topmost registered
+  view, so the icons' mouse view hid SwiftUI targets under it, and a Table or List with SwiftUI drops swallows the rest.
+  `DragCheck.swift` checks them. Checks set `FileOps.alertSink`, so no dialog ever opens during a check.
 - `Onboarding.swift`: the first-launch walkthrough (welcome, shelf, default browser, permissions, Open at Login). Shown only
   when `Onboarding.isExistingUser` is false (no `onboarded`, `migratedFrom`, recents, favorites, workspaces...).
 - `Migration.swift`: the one-time settings copy from `PREVIOUS_BUNDLE_ID`.

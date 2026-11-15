@@ -65,7 +65,6 @@ struct BrowserView: View {
 struct PaneView: View {
     @Bindable var pane: PaneModel
     let highlighted: Bool
-    @State private var targeted = false
 
     var body: some View {
         VStack(spacing: 0) {
@@ -109,14 +108,8 @@ struct PaneView: View {
                     Text(pane.filter.isEmpty ? "Empty Folder" : "No Matches").foregroundStyle(.secondary).allowsHitTesting(false)
                 }
             }
-            .overlay { if targeted { RoundedRectangle(cornerRadius: 6).stroke(Color.accentColor, lineWidth: 2).padding(2) } }
-            .onDrop(of: [.fileURL], isTargeted: $targeted) { providers in
-                Drops.load(providers) { urls in
-                    // Dropped on a workspace: remember the files there (nothing moves). Anywhere else: move/copy.
-                    if case let .workspace(id) = pane.page { Workspaces.shared.add(urls, to: id) }
-                    else if pane.page == nil { FileOps.shared.drop(urls, into: pane.url) }
-                }
-            }
+            .overlay { if pane.dropTargeted { RoundedRectangle(cornerRadius: 6).stroke(Color.accentColor, lineWidth: 2).padding(2) } }
+            .paneDrop(pane)
             Divider()
             StatusBar(pane: pane)
     }
@@ -188,7 +181,7 @@ private struct Crumb: View {
             .background(RoundedRectangle(cornerRadius: 4).fill(targeted ? Color.accentColor.opacity(0.25) : .clear))
         }
         .buttonStyle(.plain)
-        .onDrop(of: [.fileURL], isTargeted: $targeted) { Drops.load($0) { FileOps.shared.drop($0, into: url) } }
+        .folderDrop(url, targeted: $targeted)
     }
 }
 
@@ -387,7 +380,7 @@ private struct SidebarRow: View {
         Label { Text(title) } icon: { SidebarIcon(symbol: symbol, color: Sidebar.color(symbol)) }
             .tag(SidebarTarget.folder(url))
             .listRowBackground(targeted ? RoundedRectangle(cornerRadius: 6).fill(Color.accentColor.opacity(0.3)) : nil)
-            .onDrop(of: [.fileURL], isTargeted: $targeted) { Drops.load($0) { FileOps.shared.drop($0, into: url) } }
+            .folderDrop(url, targeted: $targeted)
     }
 }
 
@@ -418,15 +411,17 @@ struct ListView: View {
     @Bindable var pane: PaneModel
     var body: some View {
         Table(of: FileItem.self, selection: $pane.selection, sortOrder: $pane.sortOrder) {
-            TableColumn("Name", value: \.name, comparator: .localizedStandard) { NameCell(item: $0, pane: pane) }
+            TableColumn("Name", value: \.name, comparator: .localizedStandard) { NameCell(item: $0, pane: pane).rowDrop($0, pane) }
                 .width(min: 160, ideal: 340)
-            TableColumn("Date Modified", value: \.sortDate) { Text(Fmt.date($0.modified)).foregroundStyle(.secondary) }
+            TableColumn("Date Modified", value: \.sortDate) { Text(Fmt.date($0.modified)).foregroundStyle(.secondary).rowDrop($0, pane) }
                 .width(min: 100, ideal: 170)
             TableColumn("Size", value: \.sortSize) { item in
-                if item.opensAsFolder { FolderCount(url: item.target) } else { Text(Fmt.size(item)).foregroundStyle(.secondary) }
+                Group {
+                    if item.opensAsFolder { FolderCount(url: item.target) } else { Text(Fmt.size(item)).foregroundStyle(.secondary) }
+                }.rowDrop(item, pane)
             }
                 .width(min: 56, ideal: 80)
-            TableColumn("Kind", value: \.kind) { Text($0.kind).foregroundStyle(.secondary) }
+            TableColumn("Kind", value: \.kind) { Text($0.kind).foregroundStyle(.secondary).rowDrop($0, pane) }
                 .width(min: 70, ideal: 150)
         } rows: {
             ForEach(pane.groups, id: \.title) { group in
@@ -578,7 +573,12 @@ private struct IconCell: View {
         .overlay {
             if pane.renaming != item.url {
                 ItemMouse(selected: pane.selection.contains(item.url), click: { pane.click(item) }, open: { pane.open([item]) },
-                          dragged: { pane.selection.contains(item.url) ? pane.selectedItems.map(\.url) : [item.url] })
+                          dragged: { pane.selection.contains(item.url) ? pane.selectedItems.map(\.url) : [item.url] },
+                          // AppKit sends drags to this view, not to SwiftUI drop targets under it: a folder takes them,
+                          // a file passes them to its pane like the background would.
+                          dropInto: item.opensAsFolder ? item.target : pane.takesDrops ? pane.url : nil,
+                          drop: { pane.drop($0, onto: item) },
+                          hover: { on in targeted = on && item.opensAsFolder })
             }
         }
         .overlay(alignment: .bottomTrailing) {
@@ -588,21 +588,36 @@ private struct IconCell: View {
                     .padding(.trailing, 10).padding(.bottom, 14)
             }
         }
-        .modifier(FolderDrop(item: item, targeted: $targeted))
         .contextMenu { ItemMenu(pane: pane, urls: pane.selection.contains(item.url) ? pane.selection : [item.url]) }
     }
 }
 
-/// Folders take drops; files pass them to the pane behind.
-private struct FolderDrop: ViewModifier {
-    let item: FileItem
-    @Binding var targeted: Bool
-    func body(content: Content) -> some View {
-        if item.opensAsFolder {
-            content.onDrop(of: [.fileURL], isTargeted: $targeted) { Drops.load($0) { FileOps.shared.drop($0, into: item.target) } }
-        } else {
-            content
-        }
+extension View {
+    /// Drops on a pane's background: into its folder (or onto its workspace).
+    func paneDrop(_ pane: PaneModel) -> some View {
+        background(DropZone(into: pane.takesDrops ? pane.url : nil, drop: { pane.take($0) }, hover: { pane.dropTargeted = $0 }))
+    }
+
+    /// Drops on an item (list row, column, gallery): a folder takes them and lights up; a file passes them to
+    /// `folder`, or to the pane like its background would.
+    func itemDrop(_ item: FileItem, _ pane: PaneModel, folder: URL? = nil) -> some View {
+        let into = item.opensAsFolder ? item.target : folder ?? (pane.takesDrops ? pane.url : nil)
+        return background(pane.dropRow == item.url ? RoundedRectangle(cornerRadius: 4).fill(Color.accentColor.opacity(0.3)).padding(-3) : nil)
+            .overlay(DropZone(into: into, drop: { urls in
+                if folder == nil || item.opensAsFolder { pane.drop(urls, onto: item) } else if let into { FileOps.shared.drop(urls, into: into) }
+            }, hover: { on in
+                if on, item.opensAsFolder { pane.dropRow = item.url } else if pane.dropRow == item.url { pane.dropRow = nil }
+            }))
+    }
+
+    /// A list cell fills its column, so the whole row takes drops.
+    func rowDrop(_ item: FileItem, _ pane: PaneModel) -> some View {
+        frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading).itemDrop(item, pane)
+    }
+
+    /// A folder that takes drops (sidebar, path bar).
+    func folderDrop(_ url: URL, targeted: Binding<Bool>) -> some View {
+        overlay(DropZone(into: url, drop: { FileOps.shared.drop($0, into: url) }, hover: { targeted.wrappedValue = $0 }))
     }
 }
 
@@ -637,6 +652,7 @@ struct GalleryView: View {
                                 .gesture(TapGesture(count: 2).onEnded { pane.open([item]) })
                                 .simultaneousGesture(TapGesture().onEnded { pane.click(item) })
                                 .onDrag { NSItemProvider(object: item.url as NSURL) }
+                                .itemDrop(item, pane)
                                 .contextMenu { ItemMenu(pane: pane, urls: [item.url]) }
                                 .help(item.name)
                                 .id(item.url)
@@ -939,11 +955,17 @@ struct ItemMouse: NSViewRepresentable {
     let click: () -> Void
     let open: () -> Void
     let dragged: () -> [URL]
+    let dropInto: URL?            // where a drop on this item goes; nil takes none
+    let drop: ([URL]) -> Void
+    let hover: (Bool) -> Void
 
     func makeNSView(context: Context) -> MouseView { MouseView() }
-    func updateNSView(_ v: MouseView, context: Context) { v.owner = self }
+    func updateNSView(_ v: MouseView, context: Context) {
+        v.owner = self
+        (v.dropInto, v.onDrop, v.onHover) = (dropInto, drop, hover)
+    }
 
-    final class MouseView: NSView, NSDraggingSource {
+    final class MouseView: FileDropView, NSDraggingSource {
         var owner: ItemMouse?
         private var down: NSPoint?
         private var deferred = false
@@ -982,6 +1004,62 @@ struct ItemMouse: NSViewRepresentable {
             [.copy, .move, .generic, .link]
         }
     }
+}
+
+/// A file drop target in AppKit. AppKit gives a drag to the topmost registered view under the pointer and stops at
+/// AppKit views that aren't (like the icons' mouse view), so SwiftUI drop targets under them never hear about it.
+class FileDropView: NSView {
+    var dropInto: URL?            // where a drop here goes; nil takes none
+    var onDrop: ([URL]) -> Void = { _ in }
+    var onHover: (Bool) -> Void = { _ in }
+
+    override init(frame: NSRect) {
+        super.init(frame: frame)
+        registerForDraggedTypes([.fileURL])
+    }
+    required init?(coder: NSCoder) { fatalError() }
+
+    private func files(_ s: NSDraggingInfo) -> [URL] { Self.files(s.draggingPasteboard) }
+    static func files(_ pb: NSPasteboard) -> [URL] {
+        pb.readObjects(forClasses: [NSURL.self], options: [.urlReadingFileURLsOnly: true]) as? [URL] ?? []
+    }
+
+    /// Finder's badge: ⌥ or another volume copies, otherwise move; nothing onto itself or into what's being dragged.
+    private func operation(_ s: NSDraggingInfo) -> NSDragOperation {
+        guard let dir = dropInto?.standardizedFileURL.path else { return [] }
+        let urls = files(s)
+        if urls.isEmpty || urls.contains(where: { dir == $0.standardizedFileURL.path || dir.hasPrefix($0.standardizedFileURL.path + "/") }) { return [] }
+        let copy = NSEvent.modifierFlags.contains(.option) || urls.contains { !FileOps.sameVolume($0, URL(fileURLWithPath: dir)) }
+        let mask = s.draggingSourceOperationMask
+        return copy || !mask.contains(.move) ? (mask.contains(.copy) ? .copy : []) : .move
+    }
+
+    override func draggingEntered(_ s: NSDraggingInfo) -> NSDragOperation { draggingUpdated(s) }
+    override func draggingUpdated(_ s: NSDraggingInfo) -> NSDragOperation {
+        let op = operation(s)
+        onHover(!op.isEmpty)
+        return op
+    }
+    override func draggingExited(_ s: NSDraggingInfo?) { onHover(false) }
+    override func performDragOperation(_ s: NSDraggingInfo) -> Bool {
+        onHover(false)
+        guard !operation(s).isEmpty else { return false }
+        onDrop(files(s))
+        return true
+    }
+}
+
+/// A drop target laid over SwiftUI content that clicks pass straight through (list rows).
+struct DropZone: NSViewRepresentable {
+    let into: URL?
+    let drop: ([URL]) -> Void
+    var hover: (Bool) -> Void = { _ in }
+
+    final class Zone: FileDropView {
+        override func hitTest(_ point: NSPoint) -> NSView? { nil }
+    }
+    func makeNSView(context: Context) -> Zone { Zone() }
+    func updateNSView(_ v: Zone, context: Context) { (v.dropInto, v.onDrop, v.onHover) = (into, drop, hover) }
 }
 
 /// ⌘K: jump to any workspace, favourite, tool, recent folder, or (as you type) any folder Spotlight knows.
