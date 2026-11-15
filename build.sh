@@ -4,12 +4,20 @@
 set -euo pipefail
 cd "$(dirname "$0")"
 
+# Optional, gitignored: BUNDLE_ID, SIGN_IDENTITY and PREVIOUS_BUNDLE_ID (settings are copied once from it), see config.example.env.
+BUNDLE_ID=app.newitools.Burrow
+SIGN_IDENTITY=""
+PREVIOUS_BUNDLE_ID=""
+[ -f config.local.env ] && source ./config.local.env
+
 swift build -c release
 APP=build/Burrow.app
 rm -rf "$APP"
 mkdir -p "$APP/Contents/MacOS" "$APP/Contents/Resources"
 cp .build/release/Burrow "$APP/Contents/MacOS/Burrow"
 cp Resources/Info.plist "$APP/Contents/Info.plist"
+/usr/libexec/PlistBuddy -c "Set :CFBundleIdentifier $BUNDLE_ID" "$APP/Contents/Info.plist"
+[ -z "$PREVIOUS_BUNDLE_ID" ] || /usr/libexec/PlistBuddy -c "Add :BurrowPreviousBundleID string $PREVIOUS_BUNDLE_ID" "$APP/Contents/Info.plist"
 [ -f Resources/Burrow.icns ] || .build/release/Burrow --make-icon Resources/Burrow.icns   # drawn by the app itself (IconArt)
 cp Resources/Burrow.icns "$APP/Contents/Resources/Burrow.icns"
 printf 'APPL????' > "$APP/Contents/PkgInfo"
@@ -17,7 +25,8 @@ printf 'APPL????' > "$APP/Contents/PkgInfo"
 xcrun actool Resources/Assets.xcassets --compile "$APP/Contents/Resources" --platform macosx \
   --minimum-deployment-target 15.0 --output-partial-info-plist build/assets-info.plist >/dev/null
 
-IDENTITY=$(security find-identity -v -p codesigning 2>/dev/null | grep "Apple Development" | head -1 | sed -E 's/.*"(.*)"/\1/')
+IDENTITY=${SIGN_IDENTITY:-}
+[ -n "$IDENTITY" ] || IDENTITY=$(security find-identity -v -p codesigning 2>/dev/null | grep "Apple Development" | head -1 | sed -E 's/.*"(.*)"/\1/')
 codesign --force --sign "${IDENTITY:--}" "$APP"
 
 if [[ "${1:-}" == "--install" ]]; then

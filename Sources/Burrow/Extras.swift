@@ -139,6 +139,9 @@ struct SettingsView: View {
                 }
                 .disabled(working)
             }
+            Section {
+                Button("Show Welcome Tour…") { Onboarding.show() }
+            }
         }
         .formStyle(.grouped)
         .frame(width: 460)
@@ -147,8 +150,8 @@ struct SettingsView: View {
 
 /// Folders (Launch Services' public.folder handler) and “reveal” requests from other apps (the NSFileViewer default).
 enum DefaultBrowser {
-    static var id: String { Bundle.main.bundleIdentifier ?? "com.example.burrow" }
-    static var isDefault: Bool { UserDefaults(suiteName: UserDefaults.globalDomain)?.string(forKey: "NSFileViewer") == id }
+    static var id: String { Bundle.main.bundleIdentifier ?? "app.newitools.Burrow" }
+    static var isDefault: Bool { UserDefaults.standard.persistentDomain(forName: UserDefaults.globalDomain)?["NSFileViewer"] as? String == id }
 
     /// Folders, "Show in Finder" from every app, and opening at login (so the shelf's hot key is always there).
     @discardableResult static func set(_ on: Bool) async -> [String] {
@@ -217,6 +220,8 @@ enum SelfCheck {
         Tidy.selfCheck()
         MDParser.selfCheck()
         Vitals.selfCheck()
+        Migration.selfCheck()
+        precondition(!Onboarding.isExistingUser(UserDefaults(suiteName: "burrow-selfcheck-empty-\(UUID().uuidString)")!), "a new user sees the walkthrough")
         print("Burrow self-check passed")
     }
 }

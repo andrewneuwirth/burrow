@@ -2,12 +2,16 @@
 
 A native macOS file browser meant to stand in for Finder (Finder still draws the desktop and can't be removed).
 Swift 6.2 tools in Swift 5 language mode, SwiftPM, macOS 15+, SwiftUI inside AppKit windows. No dependencies.
-Bundle id `com.example.burrow`.
+Bundle id `app.newitools.Burrow` (set by `build.sh`; `config.local.env`, gitignored, can override `BUNDLE_ID`,
+`SIGN_IDENTITY` and `PREVIOUS_BUNDLE_ID`, see `config.example.env`). Older builds used `com.example.burrow`:
+`Migration.swift` copies that UserDefaults domain once when `PREVIOUS_BUNDLE_ID` is set (never overwriting a key).
+Bookmarks live in `~/Library/Application Support/Burrow/` (named by app, not bundle id), so they carry over on their own.
 
 ## Commands
 
 ```sh
-swift build && .build/debug/Burrow --self-check   # file ops + undo in a temp folder, and Pier's search-ranking checks
+swift build && .build/debug/Burrow --self-check   # file ops + undo in a temp folder, search ranking, migration
+.build/debug/Burrow --welcome-preview DIR          # the first-launch walkthrough as PNGs (light + dark), offscreen
 ./build.sh                                        # build/Burrow.app (Apple Development signature, so folder grants stick)
 ./build.sh --install                              # /Applications, lsregister, relaunch: only when the owner asks
 ```
@@ -18,7 +22,10 @@ swift build && .build/debug/Burrow --self-check   # file ops + undo in a temp fo
 - `Model.swift`: `FileItem`, `BrowserModel` (one or two panes), `PaneModel` (folder, history, live refresh, selection, search), `AppSettings`.
 - `FileOps.swift`: copy/move with conflict choices and a progress bar, Trash, rename, new folder, duplicate, compress, and ⌘Z undo. Everything destructive goes through the Trash first.
 - `Views.swift`: sidebar, path bar, list / icon / gallery views, context menus, icons and thumbnails.
-- `Extras.swift`: Get Info, Settings (including "Make Burrow the Default"), the self-check.
+- `Extras.swift`: Get Info, Settings (including "Make Burrow the Default" and "Show Welcome Tour…"), the self-check.
+- `Onboarding.swift`: the first-launch walkthrough (welcome, shelf, default browser, permissions, Open at Login). Shown only
+  when `Onboarding.isExistingUser` is false (no `onboarded`, `migratedFrom`, recents, favorites, workspaces...).
+- `Migration.swift`: the one-time settings copy from `PREVIOUS_BUNDLE_ID`.
 - `Columns.swift`: column view (⌘3): ancestors from `columnRoot` read from disk, the pane as the last column, a lookahead column for a selected folder and a preview for a file.
 - `Shelf.swift`: the Drop Shelf panel (pinned folders + Holding), ⌃⌥Space through Carbon `RegisterEventHotKey`, and the drag monitors that show it while files are dragged in any app (mouse monitors need no permission).
 - `Tidy.swift`: Smart Downloads: grouping buckets, the Tidy sheet (sort into kind folders, flag installers already installed / duplicates / 90-day untouched; flags start unticked and only go to the Trash).

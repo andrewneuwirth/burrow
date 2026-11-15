@@ -5,6 +5,8 @@ import SwiftUI
 struct BurrowApp: App {
     @NSApplicationDelegateAdaptor(AppDelegate.self) var delegate
 
+    init() { Migration.run() }   // before anything reads settings
+
     var body: some Scene {
         Settings { SettingsView() }
             .commands { BurrowCommands() }
@@ -17,6 +19,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     func applicationDidBecomeActive(_ notification: Notification) { Windows.shared.reloadAll() }
 
     func applicationWillFinishLaunching(_ notification: Notification) {
+        // Command-line runs (self-check, previews, --make-default) never show a Dock icon.
+        let cli = ["--self-check", "--welcome-preview", "--make-icon", "--make-default", "--give-back"]
+        if CommandLine.arguments.contains(where: cli.contains) { NSApp.setActivationPolicy(.accessory) }
         // "Reveal in Finder" from other apps, once Burrow is the NSFileViewer: the 'misc'/'mvis' event Finder gets.
         NSAppleEventManager.shared().setEventHandler(self, andSelector: #selector(reveal(_:reply:)),
                                                      forEventClass: AEEventClass(kAEMiscStandards), andEventID: AEEventID(kAEMakeObjectsVisible))
@@ -24,6 +29,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         if CommandLine.arguments.contains("--self-check") { MainActor.assumeIsolated { SelfCheck.run() }; exit(0) }
+        if let i = CommandLine.arguments.firstIndex(of: "--welcome-preview"), CommandLine.arguments.count > i + 1 {
+            MainActor.assumeIsolated { WelcomePreview.run(into: CommandLine.arguments[i + 1]) }
+            exit(0)
+        }
         if let i = CommandLine.arguments.firstIndex(of: "--make-icon"), CommandLine.arguments.count > i + 1 {
             MainActor.assumeIsolated { try! IconArt.write(URL(fileURLWithPath: CommandLine.arguments[i + 1])) }
             exit(0)
@@ -42,6 +51,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             Shelf.shared.install()
             DispatchQueue.main.async {   // after any open-file events from the launch
                 if Windows.shared.controllers.isEmpty { Windows.shared.open(AppSettings.shared.startFolder) }
+                Onboarding.showIfNew()
             }
         }
     }
