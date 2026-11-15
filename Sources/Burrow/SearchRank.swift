@@ -2,7 +2,7 @@
 // or move it to Kit if a third app needs it.
 import Foundation
 
-// Search's ranking: pure Foundation, no AppKit, checked by `Pier --self-check`.
+// Search's ranking: pure Foundation, no AppKit, checked by `Burrow --self-check`.
 // The index, the hotkey and opening things live in AppSearchIndex.swift; the views in DockView.swift.
 
 /// One searchable name, normalised once when it is indexed so each keystroke only compares strings.

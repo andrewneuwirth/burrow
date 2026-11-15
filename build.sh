@@ -1,6 +1,8 @@
 #!/bin/zsh
 # Builds build/Burrow.app, signed with the Apple Development identity (a stable signature keeps the
 # Desktop/Documents/Downloads grants across rebuilds). --install puts it in /Applications and relaunches it.
+# --release ignores config.local.env and signs with Developer ID (hardened runtime + secure timestamp) for
+# notarization: see ../Kit/tools/release-app.sh.
 set -euo pipefail
 cd "$(dirname "$0")"
 
@@ -8,7 +10,9 @@ cd "$(dirname "$0")"
 BUNDLE_ID=app.newitools.Burrow
 SIGN_IDENTITY=""
 PREVIOUS_BUNDLE_ID=""
-[ -f config.local.env ] && source ./config.local.env
+RELEASE=0; [[ "${1:-}" == "--release" ]] && RELEASE=1
+# A public release never reads the local file: no previous id or personal settings in the shipped app.
+[ "$RELEASE" = 0 ] && [ -f config.local.env ] && source ./config.local.env
 
 swift build -c release
 APP=build/Burrow.app
@@ -25,10 +29,19 @@ printf 'APPL????' > "$APP/Contents/PkgInfo"
 xcrun actool Resources/Assets.xcassets --compile "$APP/Contents/Resources" --platform macosx \
   --minimum-deployment-target 15.0 --output-partial-info-plist build/assets-info.plist >/dev/null
 
-IDENTITY=${SIGN_IDENTITY:-}
-[ -n "$IDENTITY" ] || IDENTITY=$(security find-identity -v -p codesigning 2>/dev/null | grep "Apple Development" | head -1 | sed -E 's/.*"(.*)"/\1/')
 # Sparkle (updates): embedded and its helpers signed inside-out before the app, see Kit's docs/updates.md.
 KIT=../Kit; [ -d "$KIT" ] || KIT=.build/checkouts/mac-tools-kit
+IDENTITY=${SIGN_IDENTITY:-}
+if [ "$RELEASE" = 1 ]; then
+  [ -n "$IDENTITY" ] || IDENTITY=$(security find-identity -v -p codesigning 2>/dev/null | grep "Developer ID Application" | head -1 | sed -E 's/.*"(.*)"/\1/')
+  [ -n "$IDENTITY" ] || { echo "No Developer ID Application identity in the keychain" >&2; exit 1; }
+  echo "==> Signing for release with $IDENTITY"
+  "$KIT/tools/embed-sparkle.sh" "$APP" "$IDENTITY" --release
+  codesign --force --options runtime --timestamp --sign "$IDENTITY" "$APP"
+  codesign --verify --deep --strict --verbose=2 "$APP"
+  echo "Built $APP (release)"; exit 0
+fi
+[ -n "$IDENTITY" ] || IDENTITY=$(security find-identity -v -p codesigning 2>/dev/null | grep "Apple Development" | head -1 | sed -E 's/.*"(.*)"/\1/')
 "$KIT/tools/embed-sparkle.sh" "$APP" "${IDENTITY:--}"
 codesign --force --sign "${IDENTITY:--}" "$APP"
 
