@@ -1,0 +1,11 @@
+name: CI
+on: [push, pull_request]
+
+jobs:
+  build:
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+      # Package.swift needs Swift 6.2 tools, which ship with Xcode 26; the runner's default may be older.
+      - run: sudo xcode-select -s "$(ls -d /Applications/Xcode_26*.app | sort -V | tail -1)"
+      - run: swift build && .build/debug/Burrow --self-check
