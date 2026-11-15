@@ -46,11 +46,15 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             }
             return
         }
+        // Opened by Open at Login: the launch event says so (read now, it's gone after this call).
+        let atLogin = NSAppleEventManager.shared().currentAppleEvent?.paramDescriptor(forKeyword: keyAEPropData)?.enumCodeValue
+            == OSType(keyAELaunchedAsLogInItem)
         MainActor.assumeIsolated {
             Keys.install()
             Shelf.shared.install()
             DispatchQueue.main.async {   // after any open-file events from the launch
-                if Windows.shared.controllers.isEmpty { Windows.shared.open(AppSettings.shared.startFolder) }
+                let quiet = atLogin && AppSettings.shared.quietLogin
+                if Windows.shared.controllers.isEmpty && !quiet { Windows.shared.open(AppSettings.shared.startFolder) }
                 Onboarding.showIfNew()
             }
         }

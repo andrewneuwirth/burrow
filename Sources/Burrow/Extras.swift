@@ -131,6 +131,7 @@ struct SettingsView: View {
             Section("Drop Shelf") {
                 Toggle("Show the shelf while dragging files", isOn: $s.shelfOnDrag)
                 Text("⌃⌥Space shows or hides it from any app.").foregroundStyle(.secondary)
+                Toggle("Start without a window when opening at login", isOn: $s.quietLogin)
             }
             Section("Default file browser") {
                 Text(isDefault ? "Burrow opens folders and every app's “Show in Finder”."

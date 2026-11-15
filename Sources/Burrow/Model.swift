@@ -512,6 +512,8 @@ final class AppSettings {
     var openMarkdownHere: Bool { didSet { d.set(openMarkdownHere, forKey: "openMarkdownHere") } }
     var iconSize: IconSize { didSet { d.set(iconSize.rawValue, forKey: "iconSize") } }
     var folderTint: Int { didSet { d.set(folderTint, forKey: "folderTint") } }
+    /// Open at Login starts Burrow in the background (shelf and hot key only), no window.
+    var quietLogin: Bool { didSet { d.set(quietLogin, forKey: "quietLogin") } }
     /// The pages and shortcuts only software developers need: Installed, AI Agents, Xcode leftovers, ~/Developer.
     var developerTools: Bool {
         didSet {
@@ -554,6 +556,7 @@ final class AppSettings {
         openMarkdownHere = d.object(forKey: "openMarkdownHere") as? Bool ?? true
         iconSize = IconSize(rawValue: d.string(forKey: "iconSize") ?? "") ?? .medium
         folderTint = d.object(forKey: "folderTint") as? Int ?? 0
+        quietLogin = d.bool(forKey: "quietLogin")
         recents = d.stringArray(forKey: "recents") ?? []
         shelf = (d.stringArray(forKey: "shelf")?.map { URL(fileURLWithPath: $0) }
                  ?? ["Desktop", "Documents", "Downloads"].map { home.appendingPathComponent($0) }).map(\.folder)
